@@ -1,47 +1,59 @@
 import paho.mqtt.client as mqtt
 import sys, getopt
+from sty import fg, bg, ef, rs
 
 class VirtualOS:
-
+    initTopic = "home/init"
     mainTopic = "home"
     globalTopic = "home"
     initPayload = "$INIT$"
     brokerip = "localhost"
-    state = 1
+    state = True
     argv = ''
 
     def strState(self):
-        if(state):
+        if(self.state):
             return "isON"
         else:
             return "isOFF"
+    def bitState(self):
+        if(self.state):
+            return "1"
+        else:
+            return "0"
 
     def on_connect(self, client, userdata, flags, rc):
         print("Connected with result code "+str(rc))
+        client.subscribe(self.initTopic)
         client.subscribe(self.mainTopic)
         client.subscribe(self.globalTopic)
-        client.publish(self.mainTopic, self.initPayload + str(self.state))
+        client.publish(self.mainTopic, self.initPayload + self.bitState())
 
 
     def on_message(self, client, userdata, msg):
         strPayload = str(msg.payload)[2:-1]
-        print("==== on_massage ====")
-        print("Incomming message : " + strPayload)
-        print("Precedent state   : " + str(self.state))
-        shouldSendState = 0
-        if(strPayload == "ON"):
-            self.state = 1
-            shouldSendState = 1
-        elif(strPayload == "OFF"):
-            self.state = 0
-            shouldSendState = 1
-        elif(strPayload == "SWITCH"):
-            self.state = not(self.state)
-            shouldSendState = 1
-        
-        if(shouldSendState):
-            client.publish(self.mainTopic, strState())
-        print("New state         : " + strPayload)
+        if(not(strPayload.startswith(self.initPayload)) and not(strPayload.startswith("is"))):
+            print(fg.yellow + "============ on_message ============" + fg.rs)
+            print(fg.green + "Incomming message : " + fg.rs + strPayload)
+            print(fg.green + "Precedent state   : " + fg.rs + self.strState())
+            shouldSendState = False
+            if(strPayload == "ON"):
+                self.state = True
+                shouldSendState = True
+            elif(strPayload == "OFF"):
+                self.state = False
+                shouldSendState = True
+            elif(strPayload == "SWITCH"):
+                self.state = not(self.state)
+                shouldSendState = True
+            elif(strPayload == "INIT"):
+                client.publish(self.mainTopic, self.initPayload + self.bitState())
+                print(fg.green + "Action            : "  + fg.rs + "SEND INIT")
+            
+            if(shouldSendState == True):
+                client.publish(self.mainTopic, self.strState())
+                print(fg.green + "Action            : "  + fg.rs + "CHANGE STATE and UPDATE")
+            print(fg.green + "New state         : " + fg.rs + self.strState())
 
     def init(self, arguments):
         self.argv = arguments
