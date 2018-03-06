@@ -10,9 +10,6 @@ class VirtualOS:
     state = 1
     argv = ''
 
-    def __init__(self):
-        self.data = []
-
     def strState(self):
         if(state):
             return "isON"
