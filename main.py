@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import paho.mqtt.client as mqtt
 import sys, getopt
 from sty import fg, bg, ef, rs
